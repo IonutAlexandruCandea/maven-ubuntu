@@ -1,0 +1,14 @@
+- name: Remove Maven environment variables
+  ansible.builtin.file:
+    path: /etc/profile.d/maven.sh
+    state: absent
+
+- name: Remove Maven symlink
+  ansible.builtin.file:
+    path: /usr/local/bin/mvn
+    state: absent
+
+- name: Remove Maven installation directory
+  ansible.builtin.file:
+    path: "/opt/apache-maven-{{ maven_version }}"
+    state: absent

@@ -1,0 +1,65 @@
+---
+- name: Check for Java
+  command: java -version
+  register: java_version
+  ignore_errors: true
+  changed_when: false
+
+- name: Display Java Version
+  debug:
+    var: java_version.stdout_lines
+  when: java_version.rc == 0
+
+- name: Fail if Java is not installed
+  fail:
+    msg: "Java is not installed on the target system! Please install Java before proceeding!"
+  when: java_version.rc != 0
+
+- name: Update APT cache
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install required packages
+  ansible.builtin.apt:
+    name:
+      - wget
+      - unzip
+    state: present
+
+- name: Download Maven
+  get_url:
+    url: "https://downloads.apache.org/maven/maven-3/{{ maven_version }}/binaries/apache-maven-{{ maven_version }}-bin.zip"
+    dest: "/tmp/apache-maven-{{ maven_version }}-bin.zip"
+    mode: '0644'
+
+- name: Unpack Maven
+  ansible.builtin.unarchive:
+    src: "/tmp/apache-maven-{{ maven_version }}-bin.zip"
+    dest: /opt
+    remote_src: yes
+    creates: "/opt/apache-maven-{{ maven_version }}"
+
+- name: Add Maven environment variables
+  ansible.builtin.copy:
+    dest: /etc/profile.d/maven.sh
+    content: |
+      export M2_HOME=/opt/apache-maven-{{ maven_version }}
+      export PATH=${M2_HOME}/bin:${PATH}
+    mode: '0644'
+
+- name: Create Maven symlink
+  ansible.builtin.file:
+    src: "/opt/apache-maven-{{ maven_version }}/bin/mvn"
+    dest: "/usr/local/bin/mvn"
+    state: link
+
+- name: Cleanup Maven download
+  ansible.builtin.file:
+    path: "/tmp/apache-maven-{{ maven_version }}-bin.zip"
+    state: absent
+
+
+
+
+
